@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170707153909) do
+ActiveRecord::Schema.define(version: 20170707162000) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -25,6 +25,7 @@ ActiveRecord::Schema.define(version: 20170707153909) do
     t.integer "low"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "station_id"
   end
 
   create_table "stations", force: :cascade do |t|
@@ -37,19 +38,23 @@ ActiveRecord::Schema.define(version: 20170707153909) do
 
 
   create_view "comparative_days",  sql_definition: <<-SQL
-      SELECT days.date,
+      SELECT days.station_id,
+      days.date,
       to_char((days.date)::timestamp with time zone, 'MMDD'::text) AS month_day,
       days.high,
-      round(avg(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text)))) AS avg_high,
-      round((min(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text))))::double precision) AS min_high,
-      round((max(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text))))::double precision) AS max_high,
-      round(avg(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text)))) AS avg_low,
-      round((min(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text))))::double precision) AS min_low,
-      round((max(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text))))::double precision) AS max_low,
+      round(avg(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text)))) AS avg_high,
+      round(avg(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text)) ORDER BY days.date ROWS BETWEEN 10 PRECEDING AND 0 FOLLOWING)) AS recent_avg_high,
+      round((min(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text))))::double precision) AS min_high,
+      round((max(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text))))::double precision) AS max_high,
+      round(avg(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text)))) AS avg_low,
+      round(avg(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text)) ORDER BY days.date ROWS BETWEEN 10 PRECEDING AND 0 FOLLOWING)) AS recent_avg_low,
+      round((min(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text))))::double precision) AS min_low,
+      round((max(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text))))::double precision) AS max_low,
       days.low,
       days.precipitation,
       days.snow
-     FROM days;
+     FROM days
+    WHERE ((days.low <> '-9999'::integer) AND (days.high <> '-9999'::integer));
   SQL
 
 end

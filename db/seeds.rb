@@ -8,13 +8,23 @@
 #
 require "csv"
 
-puts "importing data for Camp Mabry"
-CSV.foreach("data/Camp Mabry temperatures 1975-01-01 to 2017-06-11.csv", headers: :first_row) do |row|
-  date = Date.parse(row["DATE"])
-  puts "#{date}   #{row["TMAX"]}/#{row["TMIN"]}"
-  d = Day.create(date: date,
-                 high: row["TMAX"],
-                 low: row["TMIN"],
-                 precipitation: row["PRCP"],
-                 snow: row["SNOW"])
+puts "importing data"
+Dir["data/*.csv"].each do |csv|
+  puts "  from file #{csv}"
+  CSV.foreach(csv, headers: :first_row) do |row|
+    noaa_id = row["STATION"]
+    location = "POINT(#{row["LONGITUDE"]} #{row["LATITUDE"]} #{row["ELEVATION"]})"
+    station = Station.where(noaa_id: noaa_id).first || Station.create(noaa_id: noaa_id, name: row["STATION_NAME"], location: location)
+
+    date = Date.parse(row["DATE"])
+    # puts "#{date}   #{row["TMAX"]}/#{row["TMIN"]}"
+    next if Day.where(station_id: station.id, date: date).first
+
+    d = Day.create(station_id: station.id,
+                   date: date,
+                   high: row["TMAX"],
+                   low: row["TMIN"],
+                   precipitation: row["PRCP"],
+                   snow: row["SNOW"])
+  end
 end
