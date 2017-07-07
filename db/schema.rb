@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170623182606) do
+ActiveRecord::Schema.define(version: 20170623211902) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -24,5 +24,22 @@ ActiveRecord::Schema.define(version: 20170623182606) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
+
+
+  create_view "comparative_days",  sql_definition: <<-SQL
+      SELECT days.date,
+      to_char((days.date)::timestamp with time zone, 'MMDD'::text) AS month_day,
+      days.high,
+      round(avg(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text)))) AS avg_high,
+      round((min(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text))))::double precision) AS min_high,
+      round((max(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text))))::double precision) AS max_high,
+      round(avg(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text)))) AS avg_low,
+      round((min(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text))))::double precision) AS min_low,
+      round((max(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text))))::double precision) AS max_low,
+      days.low,
+      days.precipitation,
+      days.snow
+     FROM days;
+  SQL
 
 end
