@@ -10,10 +10,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170623211902) do
+ActiveRecord::Schema.define(version: 20170707153909) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+  enable_extension "postgis"
+  enable_extension "postgis_topology"
 
   create_table "days", force: :cascade do |t|
     t.date "date"
@@ -21,6 +23,14 @@ ActiveRecord::Schema.define(version: 20170623211902) do
     t.decimal "snow"
     t.integer "high"
     t.integer "low"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "stations", force: :cascade do |t|
+    t.string "noaa_id"
+    t.string "name"
+    t.geography "location", limit: {:srid=>4326, :type=>"st_point", :has_z=>true, :geographic=>true}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
