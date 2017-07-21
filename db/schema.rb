@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170707162000) do
+ActiveRecord::Schema.define(version: 20170721193518) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -41,6 +41,9 @@ ActiveRecord::Schema.define(version: 20170707162000) do
       SELECT days.station_id,
       days.date,
       to_char((days.date)::timestamp with time zone, 'MMDD'::text) AS month_day,
+      date_part('year'::text, days.date) AS year,
+      date_part('month'::text, days.date) AS month,
+      date_part('day'::text, days.date) AS day,
       days.high,
       round(avg(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text)))) AS avg_high,
       round(avg(days.high) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text)) ORDER BY days.date ROWS BETWEEN 10 PRECEDING AND 0 FOLLOWING)) AS recent_avg_high,
@@ -51,6 +54,7 @@ ActiveRecord::Schema.define(version: 20170707162000) do
       round((min(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text))))::double precision) AS min_low,
       round((max(days.low) OVER (PARTITION BY (to_char((days.date)::timestamp with time zone, 'MMDD'::text) || to_char(days.station_id, '999'::text))))::double precision) AS max_low,
       days.low,
+      (days.high - days.low) AS swing,
       days.precipitation,
       days.snow
      FROM days
